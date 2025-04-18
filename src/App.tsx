@@ -1,16 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import TodoInput from './components/TodoInput'
 import TodoList from './components/TodoList'
 import MoodBoost from './components/MoodBoost'
+import Playground from './pages/Playground'
+import { ThemeContext } from './components/ThemeContext'
 import { Todo } from './types'
 import './styles/theme.css'
 
 let nextId = 1
 
 const App = () => {
-    const [todos, setTodos] = useState<Todo[]>([])
-    const [theme, setTheme] = useState<'light' | 'dark'>('light')
+    // const [todos, setTodos] = useState<Todo[]>([]) -  без сохранения
+    const [todos, setTodos] = useState<Todo[]>(() => {
+        const saved = localStorage.getItem('todos')
+        return saved ? JSON.parse(saved) : []
+    })
+    useEffect(() => {
+        localStorage.setItem('todos', JSON.stringify(todos))
+    }, [todos])
 
+    const [theme, setTheme] = useState<'light' | 'dark'>('light')
     useEffect(() => {
         document.body.className = theme === 'dark' ? 'dark' : ''
     }, [theme])
@@ -20,7 +29,19 @@ const App = () => {
     }
 
     const handleAdd = (text: string) => {
-        setTodos([...todos, { id: nextId++, text, completed: false }])
+        const newTodo = {
+            id: Date.now(),
+            text,
+            completed: false,
+        }
+
+        console.log('Добавляю задачу:', newTodo)
+
+        setTodos((prev) => {
+            const updated = [...prev, newTodo]
+            console.log('После добавления будет список:', updated)
+            return updated
+        })
     }
 
     const handleToggle = (id: number) => {
@@ -31,19 +52,46 @@ const App = () => {
         )
     }
 
-    return (
-        <div style={{ maxWidth: 600, margin: '40px auto', padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <h1>🧠 MoodTask</h1>
-                <button onClick={toggleTheme}>
-                    {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-                </button>
-            </div>
+    const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
-            <TodoInput onAdd={handleAdd} />
-            <TodoList todos={todos} onToggle={handleToggle} />
-            {todos.length > 0 && todos.length % 3 === 0 && <MoodBoost />}
-        </div>
+    const filteredTodos = useMemo(() => {
+        switch (filter) {
+            case 'active':
+                return todos.filter(todo => !todo.completed)
+            case 'completed':
+                return todos.filter(todo => todo.completed)
+            default:
+                return todos
+        }
+    }, [todos, filter])
+
+
+    return (
+        <ThemeContext.Provider value={{ theme, setTheme }}>
+            <div style={{ maxWidth: 600, margin: '40px auto', padding: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <h1>🧠 MoodTask</h1>
+                    <button onClick={toggleTheme}>
+                        {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+                    </button>
+                </div>
+
+                <TodoInput onAdd={handleAdd} />
+                {/*<TodoList todos={todos} onToggle={handleToggle} />*/}
+
+                <div style={{ marginBottom: 20 }}>
+                    <button onClick={() => setFilter('all')} disabled={filter === 'all'}>Все</button>
+                    <button onClick={() => setFilter('active')} disabled={filter === 'active'}>Активные</button>
+                    <button onClick={() => setFilter('completed')} disabled={filter === 'completed'}>Завершённые</button>
+                </div>
+
+                <TodoList todos={filteredTodos} onToggle={handleToggle} />
+
+                {todos.length > 0 && todos.length % 3 === 0 && <MoodBoost />}
+
+                <Playground />
+            </div>
+        </ThemeContext.Provider>
     )
 }
 
