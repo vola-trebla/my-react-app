@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import TodoInput from './components/TodoInput'
 import TodoList from './components/TodoList'
 import MoodBoost from './components/MoodBoost'
@@ -7,19 +7,27 @@ import { ThemeContext } from './components/ThemeContext'
 import { Todo } from './types'
 import './styles/theme.css'
 
-let nextId = 1
-
 const App = () => {
-    // const [todos, setTodos] = useState<Todo[]>([]) -  без сохранения
     const [todos, setTodos] = useState<Todo[]>(() => {
-        const saved = localStorage.getItem('todos')
-        return saved ? JSON.parse(saved) : []
+        try {
+            const saved = localStorage.getItem('todos')
+            return saved ? JSON.parse(saved) : []
+        } catch (err) {
+            console.error('Ошибка чтения из localStorage:', err)
+            return []
+        }
     })
+
     useEffect(() => {
-        localStorage.setItem('todos', JSON.stringify(todos))
+        try {
+            localStorage.setItem('todos', JSON.stringify(todos))
+        } catch (err) {
+            console.error('Ошибка записи в localStorage:', err)
+        }
     }, [todos])
 
     const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
     useEffect(() => {
         document.body.className = theme === 'dark' ? 'dark' : ''
     }, [theme])
@@ -28,7 +36,7 @@ const App = () => {
         setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
     }
 
-    const handleAdd = (text: string) => {
+    const handleAdd = useCallback((text: string) => {
         const newTodo = {
             id: Date.now(),
             text,
@@ -42,7 +50,7 @@ const App = () => {
             console.log('После добавления будет список:', updated)
             return updated
         })
-    }
+    }, [])
 
     const handleToggle = (id: number) => {
         setTodos(
@@ -65,7 +73,6 @@ const App = () => {
         }
     }, [todos, filter])
 
-
     return (
         <ThemeContext.Provider value={{ theme, setTheme }}>
             <div style={{ maxWidth: 600, margin: '40px auto', padding: 20 }}>
@@ -77,7 +84,6 @@ const App = () => {
                 </div>
 
                 <TodoInput onAdd={handleAdd} />
-                {/*<TodoList todos={todos} onToggle={handleToggle} />*/}
 
                 <div style={{ marginBottom: 20 }}>
                     <button onClick={() => setFilter('all')} disabled={filter === 'all'}>Все</button>

@@ -1,25 +1,31 @@
-import { useState } from 'react'
+import { useRef } from 'react'
+import React from 'react'
 
 interface Props {
     onAdd: (text: string) => void
 }
 
 const TodoInput = ({ onAdd }: Props) => {
-    const [text, setText] = useState('')
+    console.log('🔁 <TodoInput /> ререндер')
+
+    const inputRef = useRef<HTMLInputElement>(null)
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (text.trim()) {
+
+        const text = inputRef.current?.value.trim()
+        if (text) {
             onAdd(text)
-            setText('')
+            if (inputRef.current) {
+                inputRef.current.value = ''
+            }
         }
     }
 
     return (
         <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
             <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
+                ref={inputRef}
                 placeholder="Что нужно сделать?"
                 style={{ padding: 8, width: '60%', marginRight: 10 }}
             />
@@ -30,4 +36,4 @@ const TodoInput = ({ onAdd }: Props) => {
     )
 }
 
-export default TodoInput
+export default React.memo(TodoInput)
