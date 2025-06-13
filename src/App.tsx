@@ -3,61 +3,38 @@ import TodoInput from './components/TodoInput'
 import TodoList from './components/TodoList'
 import MoodBoost from './components/MoodBoost'
 import Playground from './pages/Playground'
+import useTheme from './hooks/useTheme'
+import useTodos from './hooks/useTodos'
 import { ThemeContext } from './components/ThemeContext'
 import { Todo } from './types'
 import './styles/theme.css'
 
 const App = () => {
-    const [todos, setTodos] = useState<Todo[]>(() => {
-        try {
-            const saved = localStorage.getItem('todos')
-            return saved ? JSON.parse(saved) : []
-        } catch (err) {
-            console.error('Ошибка чтения из localStorage:', err)
-            return []
-        }
-    })
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('todos', JSON.stringify(todos))
-        } catch (err) {
-            console.error('Ошибка записи в localStorage:', err)
-        }
-    }, [todos])
-
-    const [theme, setTheme] = useState<'light' | 'dark'>('light')
+    const { todos, dispatch } = useTodos()
+    const { theme, setTheme } = useTheme()
 
     useEffect(() => {
         document.body.className = theme === 'dark' ? 'dark' : ''
     }, [theme])
 
     const toggleTheme = () => {
-        setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
+        setTheme(theme === 'light' ? 'dark' : 'light')
     }
 
-    const handleAdd = useCallback((text: string) => {
-        const newTodo = {
-            id: Date.now(),
-            text,
-            completed: false,
-        }
+    const handleAdd = (text: string) => {
+        dispatch({ type: 'add', payload: text })
+    }
 
-        console.log('Добавляю задачу:', newTodo)
-
-        setTodos((prev) => {
-            const updated = [...prev, newTodo]
-            console.log('После добавления будет список:', updated)
-            return updated
-        })
-    }, [])
+    const handleDelete = (id: number) => {
+        dispatch({ type: 'delete', payload: id })
+    }
 
     const handleToggle = (id: number) => {
-        setTodos(
-            todos.map((todo) =>
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-            ),
-        )
+        dispatch({ type: 'toggle', payload: id })
+    }
+
+    const handleEdit = (id: number, text: string) => {
+        dispatch({ type: 'edit', payload: { id, text } })
     }
 
     const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
@@ -91,7 +68,7 @@ const App = () => {
                     <button onClick={() => setFilter('completed')} disabled={filter === 'completed'}>Завершённые</button>
                 </div>
 
-                <TodoList todos={filteredTodos} onToggle={handleToggle} />
+                <TodoList todos={filteredTodos} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleEdit} />
 
                 {todos.length > 0 && todos.length % 3 === 0 && <MoodBoost />}
 
