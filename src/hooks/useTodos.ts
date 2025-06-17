@@ -7,6 +7,7 @@ type Action =
     | { type: 'toggle'; payload: number }
     | { type: 'delete'; payload: number }
     | { type: 'edit'; payload: { id: number; text: string } }
+    | { type: 'clear' }
 
 const reducer = (state: Todo[], action: Action): Todo[] => {
     switch (action.type) {
@@ -31,6 +32,8 @@ const reducer = (state: Todo[], action: Action): Todo[] => {
                     ? { ...todo, text: action.payload.text }
                     : todo,
             )
+        case 'clear':
+            return []
         default:
             return state
     }
@@ -70,7 +73,11 @@ const useTodos = () => {
         dispatch({ type: 'edit', payload: { id, text } })
     }, [])
 
-    return { todos, handleAdd, handleDelete, handleToggle, handleEdit }
+    const resetTodos = useCallback(() => {
+        dispatch({ type: 'clear' })
+    }, [dispatch])
+
+    return { todos, handleAdd, handleDelete, handleToggle, handleEdit, resetTodos }
 }
 
 export default useTodos
