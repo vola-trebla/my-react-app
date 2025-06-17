@@ -1,5 +1,6 @@
-import { useReducer, useEffect } from 'react'
+import { useReducer, useCallback, useEffect } from 'react'
 import { Todo } from '../types'
+import useLocalStorage from './useLocalStorage'
 
 type Action =
     | { type: 'add'; payload: string }
@@ -36,27 +37,40 @@ const reducer = (state: Todo[], action: Action): Todo[] => {
 }
 
 const useTodos = () => {
-    const init = (): Todo[] => {
-        try {
-            const saved = localStorage.getItem('todos')
-            return saved ? JSON.parse(saved) : []
-        } catch (err) {
-            console.error('Ошибка чтения из localStorage:', err)
-            return []
-        }
-    }
+    const [savedTodos, setSavedTodos] = useLocalStorage<Todo[]>('todos', [])
 
-    const [todos, dispatch] = useReducer(reducer, [], init)
+    // many tasks for check pending
+    // const [savedTodos, setSavedTodos] = useLocalStorage<Todo[]>('todos',
+    //     Array.from({ length: 10000 }, (_, i) => ({
+    //         id: i,
+    //         text: `Task ${i}`,
+    //         completed: Math.random() > 0.5
+    //     }))
+    // )
+
+    const [todos, dispatch] = useReducer(reducer, savedTodos)
 
     useEffect(() => {
-        try {
-            localStorage.setItem('todos', JSON.stringify(todos))
-        } catch (err) {
-            console.error('Ошибка записи в localStorage:', err)
-        }
-    }, [todos])
+        setSavedTodos(todos)
+    }, [todos, setSavedTodos])
 
-    return { todos, dispatch }
+    const handleAdd = useCallback((text: string) => {
+        dispatch({ type: 'add', payload: text })
+    }, [])
+
+    const handleDelete = useCallback((id: number) => {
+        dispatch({ type: 'delete', payload: id })
+    }, [])
+
+    const handleToggle = useCallback((id: number) => {
+        dispatch({ type: 'toggle', payload: id })
+    }, [])
+
+    const handleEdit = useCallback((id: number, text: string) => {
+        dispatch({ type: 'edit', payload: { id, text } })
+    }, [])
+
+    return { todos, handleAdd, handleDelete, handleToggle, handleEdit }
 }
 
 export default useTodos

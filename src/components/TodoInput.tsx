@@ -6,8 +6,6 @@ interface Props {
 }
 
 const TodoInput = ({ onAdd }: Props) => {
-    console.log('🔁 <TodoInput /> ререндер')
-
     const inputRef = useRef<HTMLInputElement>(null)
 
     const handleSubmit = (e: React.FormEvent) => {
