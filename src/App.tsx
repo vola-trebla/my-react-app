@@ -8,7 +8,6 @@ import useFilteredTodos from './hooks/useFilteredTodos'
 import useSearchTodos from './hooks/useSearchTodos'
 import { ThemeContext } from './components/ThemeContext'
 import './styles/theme.css'
-import React from "react";
 
 const App = () => {
     const { todos,  handleAdd, handleDelete, handleToggle, handleEdit, resetTodos } = useTodos()
